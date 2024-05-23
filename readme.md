@@ -1,6 +1,8 @@
 # Sorgis Raid Marks
 Raid mark targeting and assigning addon for the vanilla wow client.
 
+***Using SuperWoW will increase the effectivnes of this addon and make the following optimizations unneccesary.***
+
 ## How to optimize mark targeting
 Short answer: ***enable nameplates and mod your client to increase nameplate range.***
 

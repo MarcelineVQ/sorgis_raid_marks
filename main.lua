@@ -266,8 +266,22 @@ do
 end
 
 srm.tryTargetMark = function(aRaidMark)
-    return srm.tryTargetUnitWithRaidMarkFromGroupMembers(aRaidMark) or 
-        srm.tryTargetRaidMarkInNamePlates(aRaidMark)
+    local markIndex = {
+        ["star"] = 1,
+        ["circle"] = 2,
+        ["diamond"] = 3,
+        ["triangle"] = 4,
+        ["moon"] = 5,
+        ["square"] = 6,
+        ["cross"] = 7,
+        ["skull"] = 8,
+    }
+    if SetAutoloot then
+        TargetUnit("mark"..markIndex[aRaidMark])
+    else
+        return srm.tryTargetUnitWithRaidMarkFromGroupMembers(aRaidMark) or
+            srm.tryTargetRaidMarkInNamePlates(aRaidMark)
+    end
 end
 
 srm.tryAttackMark = function(aRaidMark)
