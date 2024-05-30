@@ -9,6 +9,19 @@
 local _G = _G or getfenv(0)
 local srm = _G.srm or {}
 
+local has_superwow = SetAutoloot and true or false
+
+local markIndex = {
+    ["star"] = 1,
+    ["circle"] = 2,
+    ["diamond"] = 3,
+    ["triangle"] = 4,
+    ["moon"] = 5,
+    ["square"] = 6,
+    ["cross"] = 7,
+    ["skull"] = 8,
+}
+
 do
     local make_logger = function(r, g, b)
         return function(...)
@@ -59,21 +72,13 @@ srm.markUnitWithRaidMark = function(aMark, aUnitID)
     aUnitID = aUnitID or "target"
 
     if not srm.unitExists(aUnitID) then return end
+    if not markIndex[aMark] then return end
 
-    local markIndex = ({
-        ["star"] = 1,
-        ["circle"] = 2,
-        ["diamond"] = 3,
-        ["triangle"] = 4,
-        ["moon"] = 5,
-        ["square"] = 6,
-        ["cross"] = 7,
-        ["skull"] = 8,
-    })[aMark]
-
-    if markIndex == nil then return end
-
-    SetRaidTarget(aUnitID, markIndex) 
+    if has_superwow and not (playerIsInRaid or playerIsInParty) then
+        SetRaidTarget(aUnitID, markIndex[aMark],1)
+    else
+        SetRaidTarget(aUnitID, markIndex[aMark])
+    end
 end
 
 srm.playerIsInRaid = function()
@@ -83,6 +88,66 @@ end
 srm.playerIsInParty = function()
     return not srm.playerIsInRaid() and GetNumPartyMembers() ~= 0
 end
+
+-- interrupt block
+-- this will be for clicking to use an interrupt on the mark
+-- I need to scan the spellbook 'once' and find the relevant interrupt
+-- do
+--     local getInterruptSlotIndex
+--     do
+--         local interruptSlotIndex
+--         -- need a table of interrupts based on class, wars have 2
+
+--         local interrupts = { "Counterspell", "Kick", "Pummel", "Shield Bash" "Earth Shock" }
+
+--         local IsInterruptAction = function (slotIndex)
+--             local _,actionType,identifier = GetActionText(slotIndex)
+--             if actionType == "SPELL" then
+--                 local name,rank,texture = SpellInfo(identifier)
+--                 -- wars must match stance, everyone else is fine
+--                 for i,spell in ipairs(interrupts) do
+--                     if spell == "Pummel"
+--                 end
+
+--             end
+--         end
+
+--         getInterruptSlotIndex = function()
+--             if interruptSlotIndex == nil then
+--                 for slotIndex = 1, 120 do
+--                     if IsInterruptAction(slotIndex) then
+--                         interruptSlotIndex = slotIndex
+--                         break
+--                     end
+--                 end
+--             end
+
+--             return interruptSlotIndex
+--         end
+
+--         local frame = CreateFrame("FRAME")
+--         frame:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
+--         frame:SetScript("OnEvent", function()
+--             if event == "ACTIONBAR_SLOT_CHANGED" then
+--                 interruptSlotIndex = nil
+--             end
+--         end)
+--     end
+
+--     srm.interruptUnit = function(guid)
+--         local interruptSlotIndex = getInterruptSlotIndex()
+
+--         if not interruptSlotIndex then
+--             srm.error("sorgis_raid_marks interruptUnit requires the interrupt ability to be somewhere in the actionbars")
+--             return
+--         end
+
+--         -- if not IsCurrentAction(interruptSlotIndex) then
+--             UseAction(interruptSlotIndex)
+--             CastSpellByName()
+--         -- end
+--     end
+-- end
 
 do
     local getAttackSlotIndex
@@ -266,18 +331,9 @@ do
 end
 
 srm.tryTargetMark = function(aRaidMark)
-    local markIndex = {
-        ["star"] = 1,
-        ["circle"] = 2,
-        ["diamond"] = 3,
-        ["triangle"] = 4,
-        ["moon"] = 5,
-        ["square"] = 6,
-        ["cross"] = 7,
-        ["skull"] = 8,
-    }
-    if SetAutoloot then
-        TargetUnit("mark"..markIndex[aRaidMark])
+    if has_superwow then
+        local m = "mark"..markIndex[aRaidMark]
+        if UnitExists(m) then TargetUnit(m) end
     else
         return srm.tryTargetUnitWithRaidMarkFromGroupMembers(aRaidMark) or
             srm.tryTargetRaidMarkInNamePlates(aRaidMark)
@@ -347,6 +403,8 @@ do
         rootFrame:SetPoint("TOPLEFT", 0,0)
         rootFrame:SetMovable(true)
 
+        local cast_log = {}
+
         local makeRaidMarkFrame = function(aX, aY, aMark)
             local SIZE = 32
 
@@ -368,6 +426,11 @@ do
                             srm.tryTargetMark(aMark)
                         end
                     elseif arg1 == "RightButton" then
+                        -- if IsShiftKeyDown() then
+                        --     srm.interruptUnit(aMark)
+                        -- else
+                        --     srm.tryAttackMark(aMark)
+                        -- end
                         srm.tryAttackMark(aMark)
                     end
                 end)
@@ -392,21 +455,48 @@ do
                 raidMark.onDragStop()
             end)
 
-            local raidMarkTexture = frame:CreateTexture(nil, "OVERLAY")
+            local raidMarkTexture = frame:CreateTexture(nil, "ARTWORK")
             raidMarkTexture:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
             raidMarkTexture:SetPoint("CENTER", 0, 0)
             raidMarkTexture:SetWidth(SIZE)
             raidMarkTexture:SetHeight(SIZE)
 
+            local castHighlightTexture
+            if has_superwow then
+                castHighlightTexture = frame:CreateTexture(nil, "OVERLAY")
+                castHighlightTexture:SetTexture("Interface\\Buttons\\WHITE8x8")
+                castHighlightTexture:SetVertexColor(0,1,0,0.6)
+                castHighlightTexture:SetPoint("BOTTOM", 0, 0)
+                castHighlightTexture:SetWidth(SIZE)
+                castHighlightTexture:SetHeight(SIZE)
+                castHighlightTexture.newHeight = 0
+
+                frame:SetScript("OnUpdate", function ()
+                    local mark = "mark"..markIndex[aMark]
+                    if UnitExists(mark) then
+                        if sorgis_raid_marks.show_casts and cast_log[mark] then
+                            local elapsed = cast_log[mark].start + cast_log[mark].duration - GetTime()
+                            -- srm.log(elapsed)
+                            castHighlightTexture.newHeight = ((elapsed > 0 and elapsed or 0) / cast_log[mark].duration) * (SIZE)
+                        end
+                        raidMarkTexture:SetVertexColor(1,1,1,1)
+                    else
+                        raidMarkTexture:SetVertexColor(1,1,1,sorgis_raid_marks.fadeunmarked/100)
+                    end
+                    castHighlightTexture:SetHeight(castHighlightTexture.newHeight ~= 0 and castHighlightTexture.newHeight or -8) -- - texture size
+                end)
+
+            end
+
             local markNameToTextCoords = {
-                ["star"] =     {0.00,0.25,0.00,0.25},
-                ["circle"] =   {0.25,0.50,0.00,0.25},
-                ["diamond"] =  {0.50,0.75,0.00,0.25},
+                ["star"]     = {0.00,0.25,0.00,0.25},
+                ["circle"]   = {0.25,0.50,0.00,0.25},
+                ["diamond"]  = {0.50,0.75,0.00,0.25},
                 ["triangle"] = {0.75,1.00,0.00,0.25},
-                ["moon"] =     {0.00,0.25,0.25,0.50},
-                ["square"] =   {0.25,0.50,0.25,0.50},
-                ["cross"] =    {0.50,0.75,0.25,0.50},
-                ["skull"] =    {0.75,1.00,0.25,0.50},
+                ["moon"]     = {0.00,0.25,0.25,0.50},
+                ["square"]   = {0.25,0.50,0.25,0.50},
+                ["cross"]    = {0.50,0.75,0.25,0.50},
+                ["skull"]    = {0.75,1.00,0.25,0.50},
             }
             raidMarkTexture:SetTexCoord(unpack(markNameToTextCoords[aMark]))
 
@@ -416,6 +506,10 @@ do
                 frame:SetPoint("CENTER", aX * aScale, aY * aScale)
                 raidMarkTexture:SetWidth(aScale)
                 raidMarkTexture:SetHeight(aScale)
+                if has_superwow then
+                    castHighlightTexture:SetWidth(aScale)
+                    castHighlightTexture:SetHeight(aScale)
+                end
             end
             raidMark.getScale = function(aScale)
                 return frame:GetWidth()
@@ -495,7 +589,24 @@ do
                 sorgis_raid_marks.position = {gui.getPosition()} 
             end
         end
-
+        gui.toggleShowCasts = function()
+            sorgis_raid_marks.show_casts = not sorgis_raid_marks.show_casts
+        end
+        gui.getShowCasts = function()
+            return sorgis_raid_marks.show_casts
+        end
+        gui.togglePlayerCasts = function()
+            sorgis_raid_marks.player_casts = not sorgis_raid_marks.player_casts
+        end
+        gui.getPlayerCasts = function()
+            return sorgis_raid_marks.player_casts
+        end
+        gui.setfadeunmarked = function(aAlpha)
+            sorgis_raid_marks.fadeunmarked = (aAlpha > 0 and aAlpha <= 100 and aAlpha) or 100
+        end
+        gui.getfadeunmarked = function()
+            return sorgis_raid_marks.fadeunmarked
+        end
         gui.reset = function()
             gui.setMovable(true)
             gui.setVisibility(true)
@@ -507,10 +618,16 @@ do
         end
 
         rootFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        if has_superwow then
+            rootFrame:RegisterEvent("UNIT_CASTEVENT")
+        end
         rootFrame:SetScript("OnEvent", function()
             if event == "PLAYER_ENTERING_WORLD" then
                 sorgis_raid_marks = sorgis_raid_marks or {}
                 sorgis_raid_marks.position = sorgis_raid_marks.position or {}
+                sorgis_raid_marks.show_casts = sorgis_raid_marks.show_casts or true
+                sorgis_raid_marks.player_casts = sorgis_raid_marks.player_casts or false
+                sorgis_raid_marks.fadeunmarked = sorgis_raid_marks.fadeunmarked or 100
 
                 gui.setScale(sorgis_raid_marks.scale or 32)
                 gui.setVisibility(sorgis_raid_marks.visibility == nil or sorgis_raid_marks.visibility)
@@ -522,6 +639,19 @@ do
                     w = rootFrame:GetParent():GetWidth()
                     h = rootFrame:GetParent():GetHeight()
                     gui.setPosition(w/2,h/2*-1)
+                end
+            elseif has_superwow and gui.getShowCasts() and event == "UNIT_CASTEVENT" then
+                if (gui.getPlayerCasts() or not UnitIsPlayer(arg1)) and arg3 == "START" then
+                    local casting_mark = nil
+                    for i=1,8 do
+                        if UnitIsUnit(arg1,"mark"..i) then
+                            casting_mark = "mark"..i
+                            break
+                        end
+                    end
+                    if casting_mark then
+                        cast_log[casting_mark] = { start = GetTime(), duration = arg5 / 1000 }
+                    end
                 end
             end
         end)
@@ -562,19 +692,42 @@ do
             end
         },
         ["reset"] = {
-            "moves tray to center of the screen, resets all settings", 
+            "moves tray to center of the screen, resets all settings",
             function()
                 gui.reset()
             end
         },
         ["scale"] = {
-            "resize the tray if given a number. Prints the current scale value if no number provided", 
+            "resize the tray if given a number. Prints the current scale value if no number provided",
             function(aScale)
                 if aScale then
                     gui.setScale(tonumber(aScale)) 
                 end
 
                 srm.log("scale is: ", gui.getScale())
+            end
+        },
+        ["casts"] = {
+            "toggles showing casts on mark icons",
+            function()
+                gui.toggleShowCasts()
+                srm.log("showing casts is: ", gui.getShowCasts() and "on" or "off")
+            end
+        },
+        ["playercasts"] = {
+            "toggles show casts from marked players",
+            function()
+                gui.togglePlayerCasts()
+                srm.log("showing player casts is: ", gui.getPlayerCasts() and "on" or "off")
+            end
+        },
+        ["fadeunmarked"] = {
+            "fade unset marks, alpha range 0-100",
+            function(aAlpha)
+                if aAlpha then
+                    gui.setfadeunmarked(tonumber(aAlpha))
+                end
+                srm.log("visibility is: ", gui.getfadeunmarked(), "%")
             end
         },
     }
@@ -591,11 +744,10 @@ do
         (commands[commandName] and commands[commandName][2] or function()
             local commandsString = ""
             for command, value in pairs(commands) do
-                commandsString = commandsString .. "`" .. _G.SLASH_SRAIDMARKS1 .. " " .. command ..
-                "` : " .. value[1] .. "\n"
+                commandsString = "`" .. _G.SLASH_SRAIDMARKS1 .. " " .. command ..
+                "` : " .. value[1]
+                srm.log(commandsString)
             end 
-
-            srm.log(commandsString)
         end)(unpack(arg))
     end)
 end

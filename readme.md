@@ -1,25 +1,18 @@
 # Sorgis Raid Marks
-Raid mark targeting and assigning addon for the vanilla wow client.
+Raid mark targeting and assigning addon for the vanilla wow client  
+This version is further modified to make use of [SuperWoW](https://github.com/balakethelock/SuperWoW/)  
 
-***Using SuperWoW will increase the effectivnes of this addon and make the following optimizations unneccesary.***
+## Targeting Tray UI
+The addon adds a list of raid icons to the user interface:
+- Left click an icon to try to target the corresponding mark.
+- Right click an icon to try to target and auto attack the mark.
+- Left click + control to mark the current target with the corresponding mark.
+- Move the tray by holding left click on any icon and dragging the mouse.
+- Use `/sraidmarks` to configure the UI. From here you can resize the icons, lock it in place or hide it.
+- If you drag the tray off your screen, run `/sraidmarks reset`.
+- The addon will show casts being done by the marked targets, customize this with `/sraidmarks casts` and `/sraidmarks playercasts`
+- You can fade unused raid marks via `/sraidmarks fadeunmarked`
 
-## How to optimize mark targeting
-Short answer: ***enable nameplates and mod your client to increase nameplate range.***
-
-Raid mark targeting is attempted through two methods:
-- *unitid scan*: the addon scans raid/party members, their targets, pets, pet targets, etc., to try to find the marked unit. This method depends on the the unit either being a member of your group or being targeted by someone in it. 
-- *nameplate scan*: if the unitid method fails **and there are nameplates visible on your screen**, the addon will scan through those nameplates to try to find the marked target.
-
-***nameplates must be enabled and on screen for the addon to be able to scan them***
-
-For melee DPS, enabling nameplates should be good enough. By default, plates appear at about 20 yards.
-
-**Healers and ranged DPS should modify their clients to increase the range nameplates appear at to about 40 yards.**
-The range mod can be done using this project: https://github.com/brndd/vanilla-tweaks.
-
-Nameplates can be made to appear for enemy units only, friendly units only or all units. These modes can be assigned to keys from the Key Bindings menu, under the Targeting Functions heading. The bindings are: "Show Name Plates" (enemy only), "Show Friendly Name Plates" and "Show All Name Plates". The addon can take advantage of all three modes.
-
-Raid mark targeting will continue to work if nameplates are disabled, but the addon will be limited to scanning group members and their targets to find raid marks.
 
 ## Slash commands
 Raid mark names are: `skull`, `cross`, `moon`, `star`, `diamond`, `circle`, `square`, `triangle`. The names are not case sensitive.
@@ -66,11 +59,25 @@ Attempts to target the mark and begins an auto attack
 ## Bindings
 keys can be bound to target specific raid marks in the key binding menu, under the Sorgis Raid Marks heading.
 
-## Targeting Tray UI
-The addon adds a list of raid icons to the user interface:
-- Left click an icon to try to target the corresponding mark.
-- Right click an icon to try to target and auto attack the mark.
-- Left click + control to mark the current target with the corresponding mark.
-- Move the tray by holding left click on any icon and dragging the mouse.
-- Use `/sraidmarks` to configure the UI. From here you can resize the icons, lock it in place or hide it.
-- If you drag the tray off your screen, run `/sraidmarks reset`.
+## How to optimize mark targeting
+
+* **There is no need to do the things in this optimizing section if you are using [SuperWoW](https://github.com/balakethelock/SuperWoW/)**
+* SuperWoW allows the addon to skip using target of target and nameplates entirely.
+___
+
+Short answer: ***enable nameplates and mod your client to increase nameplate range.***
+
+Raid mark targeting is attempted through two methods:
+- *unitid scan*: the addon scans raid/party members, their targets, pets, pet targets, etc., to try to find the marked unit. This method depends on the the unit either being a member of your group or being targeted by someone in it. 
+- *nameplate scan*: if the unitid method fails **and there are nameplates visible on your screen**, the addon will scan through those nameplates to try to find the marked target.
+
+***nameplates must be enabled and on screen for the addon to be able to scan them***
+
+For melee DPS, enabling nameplates should be good enough. By default, plates appear at about 20 yards.
+
+**Healers and ranged DPS should modify their clients to increase the range nameplates appear at to about 40 yards.**
+The range mod can be done using this project: https://github.com/brndd/vanilla-tweaks.
+
+Nameplates can be made to appear for enemy units only, friendly units only or all units. These modes can be assigned to keys from the Key Bindings menu, under the Targeting Functions heading. The bindings are: "Show Name Plates" (enemy only), "Show Friendly Name Plates" and "Show All Name Plates". The addon can take advantage of all three modes.
+
+Raid mark targeting will continue to work if nameplates are disabled, but the addon will be limited to scanning group members and their targets to find raid marks.
