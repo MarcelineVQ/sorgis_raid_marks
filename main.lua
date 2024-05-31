@@ -74,7 +74,7 @@ srm.markUnitWithRaidMark = function(aMark, aUnitID)
     if not srm.unitExists(aUnitID) then return end
     if not markIndex[aMark] then return end
 
-    if has_superwow and not (playerIsInRaid or playerIsInParty) then
+    if has_superwow and not IsRaidOfficer() and not IsPartyLeader() then
         SetRaidTarget(aUnitID, markIndex[aMark],1)
     else
         SetRaidTarget(aUnitID, markIndex[aMark])
@@ -473,7 +473,7 @@ do
 
                 frame:SetScript("OnUpdate", function ()
                     local mark = "mark"..markIndex[aMark]
-                    if UnitExists(mark) then
+                    if UnitExists(mark) and (not UnitIsDead(mark) or UnitIsPlayer(mark)) then
                         if sorgis_raid_marks.show_casts and cast_log[mark] then
                             local elapsed = cast_log[mark].start + cast_log[mark].duration - GetTime()
                             -- srm.log(elapsed)
