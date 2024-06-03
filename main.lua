@@ -474,14 +474,18 @@ do
                 frame:SetScript("OnUpdate", function ()
                     local mark = "mark"..markIndex[aMark]
                     if UnitExists(mark) and (not UnitIsDead(mark) or UnitIsPlayer(mark)) then
-                        if sorgis_raid_marks.show_casts and cast_log[mark] then
-                            local elapsed = cast_log[mark].start + cast_log[mark].duration - GetTime()
-                            -- srm.log(elapsed)
-                            castHighlightTexture.newHeight = ((elapsed > 0 and elapsed or 0) / cast_log[mark].duration) * (SIZE)
+                        if sorgis_raid_marks.show_casts and (not UnitIsPlayer(mark) or sorgis_raid_marks.player_casts) then
+                            if cast_log[mark] then
+                                local elapsed = cast_log[mark].start + cast_log[mark].duration - GetTime()
+                                castHighlightTexture.newHeight = ((elapsed > 0 and elapsed or 0) / cast_log[mark].duration) * (SIZE)
+                            else
+                                castHighlightTexture.newHeight = 0
+                            end
                         end
                         raidMarkTexture:SetVertexColor(1,1,1,1)
                     else
                         raidMarkTexture:SetVertexColor(1,1,1,sorgis_raid_marks.fadeunmarked/100)
+                        castHighlightTexture.newHeight = 0
                     end
                     castHighlightTexture:SetHeight(castHighlightTexture.newHeight ~= 0 and castHighlightTexture.newHeight or -8) -- - texture size
                 end)
