@@ -471,8 +471,8 @@ do
                 castHighlightTexture:SetHeight(SIZE)
                 castHighlightTexture.newHeight = 0
 
+                local mark = "mark"..markIndex[aMark]
                 frame:SetScript("OnUpdate", function ()
-                    local mark = "mark"..markIndex[aMark]
                     if UnitExists(mark) and (not UnitIsDead(mark) or UnitIsPlayer(mark)) then
                         if sorgis_raid_marks.show_casts and (not UnitIsPlayer(mark) or sorgis_raid_marks.player_casts) then
                             if cast_log[mark] then
@@ -624,7 +624,22 @@ do
         rootFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
         if has_superwow then
             rootFrame:RegisterEvent("UNIT_CASTEVENT")
+            rootFrame:RegisterEvent("RAID_TARGET_UPDATE")
         end
+
+        local tracked_marks = {}
+        local trackMarks = function()
+            local t = {}
+            for i=1,8 do
+                local mark = "mark"..i
+                local _,guid = UnitExists(mark)
+                if guid then
+                    t[guid] = mark
+                end
+            end
+            tracked_marks = t
+        end
+
         rootFrame:SetScript("OnEvent", function()
             if event == "PLAYER_ENTERING_WORLD" then
                 sorgis_raid_marks = sorgis_raid_marks or {}
@@ -644,17 +659,18 @@ do
                     h = rootFrame:GetParent():GetHeight()
                     gui.setPosition(w/2,h/2*-1)
                 end
+
+                trackMarks()
+            elseif has_superwow and event == "RAID_TARGET_UPDATE" then
+                trackMarks()
             elseif has_superwow and gui.getShowCasts() and event == "UNIT_CASTEVENT" then
-                if (gui.getPlayerCasts() or not UnitIsPlayer(arg1)) and arg3 == "START" then
-                    local casting_mark = nil
-                    for i=1,8 do
-                        if UnitIsUnit(arg1,"mark"..i) then
-                            casting_mark = "mark"..i
-                            break
+                if (gui.getPlayerCasts() or not UnitIsPlayer(arg1))then
+                    if tracked_marks[arg1] then
+                        if arg3 == "START" then
+                            cast_log[tracked_marks[arg1]] = { start = GetTime(), duration = arg5 / 1000 }
+                        elseif arg3 == "FAIL" then
+                            cast_log[tracked_marks[arg1]] = nil
                         end
-                    end
-                    if casting_mark then
-                        cast_log[casting_mark] = { start = GetTime(), duration = arg5 / 1000 }
                     end
                 end
             end
