@@ -471,25 +471,28 @@ do
                 castHighlightTexture:SetHeight(SIZE)
                 castHighlightTexture.newHeight = 0
 
-                local mark = "mark"..markIndex[aMark]
+                local elapsed = 0
                 frame:SetScript("OnUpdate", function ()
-                    if UnitExists(mark) and (not UnitIsDead(mark) or UnitIsPlayer(mark)) then
-                        if sorgis_raid_marks.show_casts and (not UnitIsPlayer(mark) or sorgis_raid_marks.player_casts) then
-                            if cast_log[mark] then
-                                local elapsed = cast_log[mark].start + cast_log[mark].duration - GetTime()
-                                castHighlightTexture.newHeight = ((elapsed > 0 and elapsed or 0) / cast_log[mark].duration) * (SIZE)
-                            else
-                                castHighlightTexture.newHeight = 0
+                    elapsed = elapsed + arg1
+                    if elapsed > 0.05 then
+                        elapsed = 0
+                        if raidMark.guid and UnitExists(raidMark.guid) and (not UnitIsDead(raidMark.guid) or UnitIsPlayer(raidMark.guid)) then
+                            if sorgis_raid_marks.show_casts and (not UnitIsPlayer(raidMark.guid) or sorgis_raid_marks.player_casts) then
+                                if cast_log[raidMark.guid] then
+                                    local elapsed = cast_log[raidMark.guid].start + cast_log[raidMark.guid].duration - GetTime()
+                                    castHighlightTexture.newHeight = ((elapsed > 0 and elapsed or 0) / cast_log[raidMark.guid].duration) * (SIZE)
+                                else
+                                    castHighlightTexture.newHeight = 0
+                                end
                             end
+                            raidMarkTexture:SetVertexColor(1,1,1,1)
+                        else
+                            raidMarkTexture:SetVertexColor(1,1,1,sorgis_raid_marks.fadeunmarked/100)
+                            castHighlightTexture.newHeight = 0
                         end
-                        raidMarkTexture:SetVertexColor(1,1,1,1)
-                    else
-                        raidMarkTexture:SetVertexColor(1,1,1,sorgis_raid_marks.fadeunmarked/100)
-                        castHighlightTexture.newHeight = 0
+                        castHighlightTexture:SetHeight(castHighlightTexture.newHeight ~= 0 and castHighlightTexture.newHeight or -8) -- - texture size
                     end
-                    castHighlightTexture:SetHeight(castHighlightTexture.newHeight ~= 0 and castHighlightTexture.newHeight or -8) -- - texture size
                 end)
-
             end
 
             local markNameToTextCoords = {
@@ -634,7 +637,8 @@ do
                 local mark = "mark"..i
                 local _,guid = UnitExists(mark)
                 if guid then
-                    t[guid] = mark
+                    t[guid] = true
+                    trayButtons[i].guid = guid
                 end
             end
             tracked_marks = t
@@ -667,9 +671,9 @@ do
                 if (gui.getPlayerCasts() or not UnitIsPlayer(arg1))then
                     if tracked_marks[arg1] then
                         if arg3 == "START" then
-                            cast_log[tracked_marks[arg1]] = { start = GetTime(), duration = arg5 / 1000 }
-                        elseif arg3 == "FAIL" then
-                            cast_log[tracked_marks[arg1]] = nil
+                            cast_log[arg1] = { start = GetTime(), duration = arg5 / 1000 }
+                        elseif arg3 == "FAIL" or arg3 == "CAST" then
+                            cast_log[arg1] = nil
                         end
                     end
                 end
