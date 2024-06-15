@@ -639,6 +639,8 @@ do
                 if guid then
                     t[guid] = true
                     trayButtons[i].guid = guid
+                else
+                    trayButtons[i].guid = nil
                 end
             end
             tracked_marks = t
