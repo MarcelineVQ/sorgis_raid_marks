@@ -469,30 +469,6 @@ do
                 castHighlightTexture:SetPoint("BOTTOM", 0, 0)
                 castHighlightTexture:SetWidth(SIZE)
                 castHighlightTexture:SetHeight(SIZE)
-                castHighlightTexture.newHeight = 0
-
-                local elapsed = 0
-                frame:SetScript("OnUpdate", function ()
-                    elapsed = elapsed + arg1
-                    if elapsed > 0.05 then
-                        elapsed = 0
-                        if raidMark.guid and UnitExists(raidMark.guid) and (not UnitIsDead(raidMark.guid) or UnitIsPlayer(raidMark.guid)) then
-                            if sorgis_raid_marks.show_casts and (not UnitIsPlayer(raidMark.guid) or sorgis_raid_marks.player_casts) then
-                                if cast_log[raidMark.guid] then
-                                    local elapsed = cast_log[raidMark.guid].start + cast_log[raidMark.guid].duration - GetTime()
-                                    castHighlightTexture.newHeight = ((elapsed > 0 and elapsed or 0) / cast_log[raidMark.guid].duration) * (SIZE)
-                                else
-                                    castHighlightTexture.newHeight = 0
-                                end
-                            end
-                            raidMarkTexture:SetVertexColor(1,1,1,1)
-                        else
-                            raidMarkTexture:SetVertexColor(1,1,1,sorgis_raid_marks.fadeunmarked/100)
-                            castHighlightTexture.newHeight = 0
-                        end
-                        castHighlightTexture:SetHeight(castHighlightTexture.newHeight ~= 0 and castHighlightTexture.newHeight or -8) -- - texture size
-                    end
-                end)
             end
 
             local markNameToTextCoords = {
@@ -522,6 +498,10 @@ do
                 return frame:GetWidth()
             end
             raidMark.onDragStop = function() end
+            raidMark.setColor = function(r,g,b,a) raidMarkTexture:SetVertexColor(r,g,b,a) end
+            if has_superwow then
+                raidMark.setCastHighlightHeight = function (h) castHighlightTexture:SetHeight(h ~= 0 and h or -8) end
+            end
 
             return raidMark
         end
@@ -536,6 +516,35 @@ do
         table.insert(trayButtons, makeRaidMarkFrame(6,0, "cross"))
         table.insert(trayButtons, makeRaidMarkFrame(7,0, "skull"))
 
+        if has_superwow then
+            local elapsed = 0
+            local rm = nil
+            local newHeight = 0
+            rootFrame:SetScript("OnUpdate", function ()
+                elapsed = elapsed + arg1
+                if elapsed > 0.05 then
+                    elapsed = 0
+                    for i=1,8 do
+                        rm = trayButtons[i]
+                        if rm.guid and UnitExists(rm.guid) and (not UnitIsDead(rm.guid) or UnitIsPlayer(rm.guid)) then
+                            if sorgis_raid_marks.show_casts and (not UnitIsPlayer(rm.guid) or sorgis_raid_marks.player_casts) then
+                                if cast_log[rm.guid] then
+                                    local elapsed = cast_log[rm.guid].start + cast_log[rm.guid].duration - GetTime()
+                                    newHeight = ((elapsed > 0 and elapsed or 0) / cast_log[rm.guid].duration) * (rm.getScale())
+                                else
+                                    newHeight = 0
+                                end
+                            end
+                            rm.setColor(1,1,1,1)
+                        else
+                            rm.setColor(1,1,1,sorgis_raid_marks.fadeunmarked/100)
+                            newHeight = 0
+                        end
+                        rm.setCastHighlightHeight(newHeight)
+                    end
+                end
+            end)
+        end
         local gui = {}
 
         gui.getScale = function()
