@@ -92,62 +92,37 @@ end
 -- interrupt block
 -- this will be for clicking to use an interrupt on the mark
 -- I need to scan the spellbook 'once' and find the relevant interrupt
--- do
---     local getInterruptSlotIndex
---     do
---         local interruptSlotIndex
---         -- need a table of interrupts based on class, wars have 2
+do
+    srm.interruptUnit = function(guid)
+        local interrupts = {
+            ["MAGE"] = "Counterspell",
+            ["ROGUE"] = "Kick",
+            ["WARRIOR"] = "Pummel",
+            -- ["WARRIOR"] = "Shield Bash",
+            ["SHAMAN"]  = "Earth Shock(Rank 1)",
+        }
 
---         local interrupts = { "Counterspell", "Kick", "Pummel", "Shield Bash" "Earth Shock" }
+        local _,class = UnitClass("player")
+        local formIndex
 
---         local IsInterruptAction = function (slotIndex)
---             local _,actionType,identifier = GetActionText(slotIndex)
---             if actionType == "SPELL" then
---                 local name,rank,texture = SpellInfo(identifier)
---                 -- wars must match stance, everyone else is fine
---                 for i,spell in ipairs(interrupts) do
---                     if spell == "Pummel"
---                 end
+        interruptSpell = interrupts[class]
 
---             end
---         end
+        if class == "WARRIOR" then
+            for i = 1, GetNumShapeshiftForms() do
+                local _, name, active = GetShapeshiftFormInfo(i)
+                if active then
+                    formIndex = i
+                    break
+                end
+            end
+            if formIndex == 1 or formIndex == 2 then
+                interruptSpell = "Shield Bash"
+            end
+        end
 
---         getInterruptSlotIndex = function()
---             if interruptSlotIndex == nil then
---                 for slotIndex = 1, 120 do
---                     if IsInterruptAction(slotIndex) then
---                         interruptSlotIndex = slotIndex
---                         break
---                     end
---                 end
---             end
-
---             return interruptSlotIndex
---         end
-
---         local frame = CreateFrame("FRAME")
---         frame:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
---         frame:SetScript("OnEvent", function()
---             if event == "ACTIONBAR_SLOT_CHANGED" then
---                 interruptSlotIndex = nil
---             end
---         end)
---     end
-
---     srm.interruptUnit = function(guid)
---         local interruptSlotIndex = getInterruptSlotIndex()
-
---         if not interruptSlotIndex then
---             srm.error("sorgis_raid_marks interruptUnit requires the interrupt ability to be somewhere in the actionbars")
---             return
---         end
-
---         -- if not IsCurrentAction(interruptSlotIndex) then
---             UseAction(interruptSlotIndex)
---             CastSpellByName()
---         -- end
---     end
--- end
+        CastSpellByName(interruptSpell,guid)
+    end
+end
 
 do
     local getAttackSlotIndex
@@ -426,12 +401,12 @@ do
                             srm.tryTargetMark(aMark)
                         end
                     elseif arg1 == "RightButton" then
-                        -- if IsShiftKeyDown() then
-                        --     srm.interruptUnit(aMark)
-                        -- else
-                        --     srm.tryAttackMark(aMark)
-                        -- end
-                        srm.tryAttackMark(aMark)
+                        if IsShiftKeyDown() then
+                            srm.interruptUnit("mark"..markIndex[aMark])
+                        else
+                            srm.tryAttackMark(aMark)
+                        end
+                        -- srm.tryAttackMark(aMark)
                     end
                 end)
             end
@@ -465,7 +440,7 @@ do
             if has_superwow then
                 castHighlightTexture = frame:CreateTexture(nil, "OVERLAY")
                 castHighlightTexture:SetTexture("Interface\\Buttons\\WHITE8x8")
-                castHighlightTexture:SetVertexColor(0,1,0,0.6)
+                castHighlightTexture:SetVertexColor(1,1,1,0.6)
                 castHighlightTexture:SetPoint("BOTTOM", 0, 0)
                 castHighlightTexture:SetWidth(SIZE)
                 castHighlightTexture:SetHeight(SIZE)
@@ -503,6 +478,10 @@ do
                 raidMark.setCastHighlightHeight = function (h) castHighlightTexture:SetHeight(h ~= 0 and h or -8) end
             end
 
+            if has_superwow then
+                raidMark.setCastTexture = function(t) castHighlightTexture:SetTexture(t) end
+            end
+
             return raidMark
         end
 
@@ -525,20 +504,19 @@ do
                 if elapsed > 0.05 then
                     elapsed = 0
                     for i=1,8 do
+                        newHeight = 0
                         rm = trayButtons[i]
                         if rm.guid and UnitExists(rm.guid) and (not UnitIsDead(rm.guid) or UnitIsPlayer(rm.guid)) then
                             if sorgis_raid_marks.show_casts and (not UnitIsPlayer(rm.guid) or sorgis_raid_marks.player_casts) then
                                 if cast_log[rm.guid] then
                                     local elapsed = cast_log[rm.guid].start + cast_log[rm.guid].duration - GetTime()
                                     newHeight = ((elapsed > 0 and elapsed or 0) / cast_log[rm.guid].duration) * (rm.getScale())
-                                else
-                                    newHeight = 0
+                                    rm.setCastTexture(cast_log[rm.guid].texture)
                                 end
                             end
                             rm.setColor(1,1,1,1)
                         else
                             rm.setColor(1,1,1,sorgis_raid_marks.fadeunmarked/100)
-                            newHeight = 0
                         end
                         rm.setCastHighlightHeight(newHeight)
                     end
@@ -661,7 +639,7 @@ do
                 sorgis_raid_marks.position = sorgis_raid_marks.position or {}
                 sorgis_raid_marks.show_casts = sorgis_raid_marks.show_casts or true
                 sorgis_raid_marks.player_casts = sorgis_raid_marks.player_casts or false
-                sorgis_raid_marks.fadeunmarked = sorgis_raid_marks.fadeunmarked or 100
+                sorgis_raid_marks.fadeunmarked = sorgis_raid_marks.fadeunmarked or 40
 
                 gui.setScale(sorgis_raid_marks.scale or 32)
                 gui.setVisibility(sorgis_raid_marks.visibility == nil or sorgis_raid_marks.visibility)
@@ -682,7 +660,8 @@ do
                 if (gui.getPlayerCasts() or not UnitIsPlayer(arg1))then
                     if tracked_marks[arg1] then
                         if arg3 == "START" then
-                            cast_log[arg1] = { start = GetTime(), duration = arg5 / 1000 }
+                            local _,_,t = SpellInfo(arg4)
+                            cast_log[arg1] = { start = GetTime(), duration = arg5 / 1000, texture = t }
                         elseif arg3 == "FAIL" or arg3 == "CAST" then
                             cast_log[arg1] = nil
                         end

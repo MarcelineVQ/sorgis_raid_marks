@@ -2,6 +2,10 @@
 Raid mark targeting and assigning addon for the vanilla wow client  
 This version is further modified to make use of [SuperWoW](https://github.com/balakethelock/SuperWoW/)  
 
+* Options added for fading marks based on whether the mark is live
+* Options added for showing current casts from the mark
+* Shift+Right Click will attempt to interrupt the chosen mark
+
 ## Targeting Tray UI
 The addon adds a list of raid icons to the user interface:
 - Left click an icon to try to target the corresponding mark.
