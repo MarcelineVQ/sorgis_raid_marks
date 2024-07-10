@@ -401,7 +401,7 @@ do
                             srm.tryTargetMark(aMark)
                         end
                     elseif arg1 == "RightButton" then
-                        if IsShiftKeyDown() then
+                        if has_superwow and IsShiftKeyDown() then
                             srm.interruptUnit("mark"..markIndex[aMark])
                         else
                             srm.tryAttackMark(aMark)
@@ -653,7 +653,7 @@ do
                     gui.setPosition(w/2,h/2*-1)
                 end
 
-                trackMarks()
+                if has_superwow then trackMarks() end
             elseif has_superwow and event == "RAID_TARGET_UPDATE" then
                 trackMarks()
             elseif has_superwow and gui.getShowCasts() and event == "UNIT_CASTEVENT" then
