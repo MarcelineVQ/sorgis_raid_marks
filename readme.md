@@ -10,7 +10,7 @@ This version is further modified to make use of [SuperWoW](https://github.com/ba
 The addon adds a list of raid icons to the user interface:
 - Left Click an icon to try to target the corresponding mark.
 - Right Click an icon to try to target and auto attack the mark.
-- Left Click + control to mark the current target with the corresponding mark.
+- Left Click + control to mark or unmark the current target with the corresponding mark.
 - - Having no target while doing this will clear the mark.
 - Move the tray by holding left click on any icon and dragging the mouse.
 - Use `/sraidmarks` to configure the UI. From here you can resize the icons, lock it in place or hide it.
