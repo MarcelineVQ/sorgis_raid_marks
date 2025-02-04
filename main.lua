@@ -315,7 +315,10 @@ end
 srm.tryTargetMark = function(aRaidMark)
     if has_superwow then
         local m = "mark"..markIndex[aRaidMark]
-        if UnitExists(m) then TargetUnit(m) end
+        if UnitExists(m) then
+            TargetUnit(m)
+            return true
+        end
     else
         return srm.tryTargetUnitWithRaidMarkFromGroupMembers(aRaidMark) or
             srm.tryTargetRaidMarkInNamePlates(aRaidMark)
@@ -324,7 +327,9 @@ end
 
 srm.tryAttackMark = function(aRaidMark)
     if srm.tryTargetMark(aRaidMark) then
-        srm.startAttack()
+
+        -- srm.startAttack()
+        AttackTarget()
         return true
     end
 
@@ -400,11 +405,11 @@ do
             do
                 frame:EnableMouse(true)
                 frame:RegisterForClicks("LeftButtonDown", "LeftButtonUp", "RightButtonDown", "RightButtonUp")
-                frame:SetScript("OnClick", function()
+                frame:SetScript("OnMouseDown", function()
                     if arg1 == "LeftButton" then
                         if IsControlKeyDown() then
                             local _,guid = UnitExists("mark"..markIndex[aMark])
-                            if not UnitExists("target") and guid then
+                            if guid then
                                 MarkUnit(guid, 0)
                             else
                                 srm.markUnitWithRaidMark(aMark)
