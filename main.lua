@@ -494,6 +494,9 @@ do
             if has_superwow then
                 raidMark.setCastHighlightHeight = function (h) castHighlightTexture:SetHeight(h ~= 0 and h or -8) end
             end
+            raidMark.setPosition = function(x,y)
+                frame:SetPoint("CENTER", x * frame:GetWidth(), y * frame:GetWidth())
+            end
 
             if has_superwow then
                 raidMark.setCastTexture = function(t) castHighlightTexture:SetTexture(t) end
@@ -501,6 +504,7 @@ do
 
             return raidMark
         end
+
 
         local trayButtons = {}
         table.insert(trayButtons, makeRaidMarkFrame(0,0, "star"))
@@ -618,6 +622,18 @@ do
         gui.getfadeunmarked = function()
             return sorgis_raid_marks.fadeunmarked
         end
+        gui.getvertical = function()
+            return sorgis_raid_marks.vertical
+        end
+        gui.togglevertical = function(vert)
+            sorgis_raid_marks.vertical = not sorgis_raid_marks.vertical
+        end
+        gui.getreverse = function()
+            return sorgis_raid_marks.reverse
+        end
+        gui.togglereverse = function(rev)
+            sorgis_raid_marks.reverse = not sorgis_raid_marks.reverse
+        end
         gui.reset = function()
             gui.setMovable(true)
             gui.setVisibility(true)
@@ -626,6 +642,14 @@ do
             w = rootFrame:GetParent():GetWidth()
             h = rootFrame:GetParent():GetHeight()
             gui.setPosition(w/2,h/2*-1)
+        end
+        gui.orientMarks = function()
+            for i,button in ipairs(trayButtons) do
+                button.setPosition(
+                    sorgis_raid_marks.vertical and 0 or (sorgis_raid_marks.reverse and 8-i or i-1),
+                    sorgis_raid_marks.vertical and (sorgis_raid_marks.reverse and 8-i or i-1) or 0
+                )
+            end
         end
 
         rootFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -657,6 +681,8 @@ do
                 sorgis_raid_marks.show_casts = sorgis_raid_marks.show_casts or true
                 sorgis_raid_marks.player_casts = sorgis_raid_marks.player_casts or false
                 sorgis_raid_marks.fadeunmarked = sorgis_raid_marks.fadeunmarked or 40
+                sorgis_raid_marks.vertical = sorgis_raid_marks.vertical or false
+                sorgis_raid_marks.reverse = sorgis_raid_marks.reverse or false
 
                 gui.setScale(sorgis_raid_marks.scale or 32)
                 gui.setVisibility(sorgis_raid_marks.visibility == nil or sorgis_raid_marks.visibility)
@@ -669,6 +695,8 @@ do
                     h = rootFrame:GetParent():GetHeight()
                     gui.setPosition(w/2,h/2*-1)
                 end
+
+                gui.orientMarks()
 
                 if has_superwow then trackMarks() end
             elseif has_superwow and event == "RAID_TARGET_UPDATE" then
@@ -759,6 +787,22 @@ do
                     gui.setfadeunmarked(tonumber(aAlpha))
                 end
                 srm.log("visibility is: ", gui.getfadeunmarked(), "%")
+            end
+        },
+        ["vertical"] = {
+            "make marks vertically oriented",
+            function()
+                gui.togglevertical()
+                gui.orientMarks()
+                srm.log("mark orientation is: ", gui.getvertical() and "vertical" or "horizontal")
+            end
+        },
+        ["reverse"] = {
+            "reverse mark display order",
+            function()
+                gui.togglereverse()
+                gui.orientMarks()
+                srm.log("mark display order is: ", gui.getreverse() and "skull..star" or "star..skull")
             end
         },
     }

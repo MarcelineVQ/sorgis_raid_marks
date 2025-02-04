@@ -17,6 +17,7 @@ The addon adds a list of raid icons to the user interface:
 - If you drag the tray off your screen, run `/sraidmarks reset`.
 - The addon will show casts being done by the marked targets, customize this with `/sraidmarks casts` and `/sraidmarks playercasts`
 - You can fade unused raid marks via `/sraidmarks fadeunmarked`
+- new vertical and reverse options for mark orientation
 
 
 ## Slash commands
