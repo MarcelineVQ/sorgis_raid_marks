@@ -22,6 +22,14 @@ local markIndex = {
     ["skull"] = 8,
 }
 
+local function MarkUnit(unit,mark)
+    if has_superwow and not IsRaidOfficer() and not IsPartyLeader() then
+        SetRaidTarget(unit, mark, 1)
+    else
+        SetRaidTarget(unit, mark)
+    end
+end
+
 do
     local make_logger = function(r, g, b)
         return function(...)
@@ -74,11 +82,7 @@ srm.markUnitWithRaidMark = function(aMark, aUnitID)
     if not srm.unitExists(aUnitID) then return end
     if not markIndex[aMark] then return end
 
-    if has_superwow and not IsRaidOfficer() and not IsPartyLeader() then
-        SetRaidTarget(aUnitID, markIndex[aMark],1)
-    else
-        SetRaidTarget(aUnitID, markIndex[aMark])
-    end
+    MarkUnit(aUnitID, markIndex[aMark])
 end
 
 srm.playerIsInRaid = function()
@@ -120,6 +124,9 @@ do
             end
         end
 
+        if class == "MAGE" or class == "SHAMAN" then
+            SpellStopCasting()
+        end
         CastSpellByName(interruptSpell,guid)
     end
 end
@@ -396,7 +403,12 @@ do
                 frame:SetScript("OnClick", function()
                     if arg1 == "LeftButton" then
                         if IsControlKeyDown() then
-                            srm.markUnitWithRaidMark(aMark)
+                            local _,guid = UnitExists("mark"..markIndex[aMark])
+                            if not UnitExists("target") and guid then
+                                MarkUnit(guid, 0)
+                            else
+                                srm.markUnitWithRaidMark(aMark)
+                            end
                         else
                             srm.tryTargetMark(aMark)
                         end

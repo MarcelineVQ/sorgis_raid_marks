@@ -1,5 +1,5 @@
 ## Interface: 11200
-## Title: sorgis raid marks - SuperWoW
+## Title: [SuperWoW] sorgis raid marks
 ## Author: https://github.com/MarcelineVQ/sorgis_raid_marks
 ## Version: 1.2.2
 ## Notes: raid marker targeting & assignment slash commands, bindings and GUI.
