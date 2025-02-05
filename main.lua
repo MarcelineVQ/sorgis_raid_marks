@@ -409,7 +409,7 @@ do
                     if arg1 == "LeftButton" then
                         if IsControlKeyDown() then
                             local _,guid = UnitExists("mark"..markIndex[aMark])
-                            if guid then
+                            if guid and (UnitIsUnit("target", guid) or not UnitExists("target")) then
                                 MarkUnit(guid, 0)
                             else
                                 srm.markUnitWithRaidMark(aMark)
