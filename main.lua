@@ -404,8 +404,8 @@ do
 
             do
                 frame:EnableMouse(true)
-                frame:RegisterForClicks("LeftButtonDown", "LeftButtonUp", "RightButtonDown", "RightButtonUp")
-                frame:SetScript("OnMouseDown", function()
+                frame:RegisterForClicks("LeftButtonDown", "RightButtonDown") -- click on down
+                frame:SetScript("OnClick", function()
                     if arg1 == "LeftButton" then
                         if IsControlKeyDown() then
                             local _,guid = UnitExists("mark"..markIndex[aMark])
